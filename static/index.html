@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão de Estoque Comunitário — Parnamirim/RN</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Barra Superior de Navegação e Contexto Institucional -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-logo" aria-hidden="true">📦</div>
+        <div>
+          <h1 class="brand-title">Gestão de Estoque</h1>
+          <p class="brand-subtitle">Pequenos Negócios & ONGs • Parnamirim/RN • ODS 9 & 12</p>
+        </div>
+      </div>
+      <div class="header-status">
+        
+        
+        <!-- Widget do Usuário Logado -->
+        <div id="user-widget" class="user-widget" style="display: none;">
+          <span>👤 <span id="user-display-name" class="user-name">Usuário</span></span>
+          <button type="button" class="btn btn-sm btn-outline" onclick="fazerLogout()" title="Sair da Conta">Sair</button>
+        </div>
+
+        <a href="/docs" target="_blank" class="btn btn-outline btn-sm" title="Documentação Swagger">Swagger API ↗</a>
+      </div>
+    </div>
+
+    <!-- Abas de Navegação (Visíveis apenas quando logado) -->
+    <nav class="nav-tabs" id="app-nav-tabs" aria-label="Navegação Principal" style="display: none;">
+      <div class="tabs-container">
+        <button class="nav-tab active" data-tab="tab-dashboard" id="btn-tab-dashboard">
+          📊 Painel Geral
+        </button>
+        <button class="nav-tab" data-tab="tab-recursos" id="btn-tab-recursos">
+          📦 Recursos & Estoque
+        </button>
+        <button class="nav-tab" data-tab="tab-movimentacoes" id="btn-tab-movimentacoes">
+          🔄 Movimentações & Fluxo
+        </button>
+        <button class="nav-tab" data-tab="tab-relatorios" id="btn-tab-relatorios">
+          📈 Relatórios & Auditoria
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ================================================================= -->
+  <!-- SEÇÃO DE AUTENTICAÇÃO (LOGIN / CADASTRO)                          -->
+  <!-- ================================================================= -->
+  <div id="auth-section" class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="brand-logo" aria-hidden="true">📦</div>
+        <h2>Controle de Estoque</h2>
+        <p>Acesse seu perfil de estoque individual</p>
+      </div>
+
+      <div class="auth-nav-tabs">
+        <button type="button" class="auth-nav-tab active" id="tab-btn-login" onclick="alternarFormAuth('login')">
+          Entrar
+        </button>
+        <button type="button" class="auth-nav-tab" id="tab-btn-cadastro" onclick="alternarFormAuth('cadastro')">
+          Criar Conta
+        </button>
+      </div>
+
+      <div class="auth-body">
+        <!-- Formulário de Login -->
+        <form id="form-login" class="auth-form" onsubmit="fazerLogin(event)">
+          <div class="form-group">
+            <label for="login-email">E-mail</label>
+            <input type="email" id="login-email" required placeholder="seu@email.com" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label for="login-senha">Senha</label>
+            <input type="password" id="login-senha" required placeholder="••••••••" autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" id="btn-submit-login">
+            Entrar no Sistema
+          </button>
+          <p class="auth-footer-text">
+            Ainda não tem conta? <a href="javascript:void(0)" onclick="alternarFormAuth('cadastro')">Cadastre-se grátis</a>
+          </p>
+        </form>
+
+        <!-- Formulário de Cadastro -->
+        <form id="form-cadastro" class="auth-form" onsubmit="fazerCadastro(event)" style="display: none;">
+          <div class="form-group">
+            <label for="cadastro-nome">Nome Completo / Organização</label>
+            <input type="text" id="cadastro-nome" required minlength="2" placeholder="Ex: Mercado da Esquina / ONG Viver Bem">
+          </div>
+          <div class="form-group">
+            <label for="cadastro-email">E-mail</label>
+            <input type="email" id="cadastro-email" required placeholder="seu@email.com" autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label for="cadastro-senha">Senha (Mínimo 6 caracteres)</label>
+            <input type="password" id="cadastro-senha" required minlength="6" placeholder="••••••••" autocomplete="new-password">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" id="btn-submit-cadastro">
+            Criar Conta e Acessar
+          </button>
+          <p class="auth-footer-text">
+            Já possui conta? <a href="javascript:void(0)" onclick="alternarFormAuth('login')">Faça login</a>
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- CONTEÚDO PRINCIPAL DO SISTEMA (VISÍVEL QUANDO AUTENTICADO)         -->
+  <!-- ================================================================= -->
+  <main class="app-main" id="app-main-section" style="display: none;">
+
+    <!-- ================================================================= -->
+    <!-- ABA 1: DASHBOARD GERAL                                            -->
+    <!-- ================================================================= -->
+    <section id="tab-dashboard" class="tab-pane active" aria-labelledby="btn-tab-dashboard">
+      <div class="section-header">
+        <div>
+          <h2>Visão Geral do Estoque</h2>
+          <p class="text-muted">Acompanhe métricas em tempo real, alertas de vencimento e movimentações recentes do seu perfil.</p>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="abrirModalRecurso()">+ Novo Recurso</button>
+          <button class="btn btn-secondary" onclick="abrirModalMovimentacao()">+ Nova Movimentação</button>
+        </div>
+      </div>
+
+      <!-- Cards de Métricas Principais (KPIs) -->
+      <div class="kpi-grid">
+        <div class="card kpi-card">
+          <div class="kpi-icon icon-blue">📦</div>
+          <div class="kpi-content">
+            <span class="kpi-label">Total de Itens Cadastrados</span>
+            <span class="kpi-value" id="kpi-total-recursos">0</span>
+            <span class="kpi-sub" id="kpi-unidades-estoque">0 unidades no total</span>
+          </div>
+        </div>
+
+        <div class="card kpi-card">
+          <div class="kpi-icon icon-orange">⚠️</div>
+          <div class="kpi-content">
+            <span class="kpi-label">Estoque Baixo / Crítico</span>
+            <span class="kpi-value" id="kpi-estoque-baixo">0</span>
+            <span class="kpi-sub">Abaixo do estoque mínimo</span>
+          </div>
+        </div>
+
+        <div class="card kpi-card">
+          <div class="kpi-icon icon-red">⏳</div>
+          <div class="kpi-content">
+            <span class="kpi-label">Validade em Risco</span>
+            <span class="kpi-value" id="kpi-validade-risco">0</span>
+            <span class="kpi-sub" id="kpi-validade-detalhe">0 vencidos • 0 em 30 dias</span>
+          </div>
+        </div>
+
+        <div class="card kpi-card">
+          <div class="kpi-icon icon-green">🔄</div>
+          <div class="kpi-content">
+            <span class="kpi-label">Fluxo nos Últimos 30 Dias</span>
+            <span class="kpi-value" id="kpi-total-movimentacoes">0 ops</span>
+            <span class="kpi-sub" id="kpi-fluxo-detalhe">+0 entradas • -0 saídas</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alertas Urgentes e Últimas Movimentações -->
+      <div class="grid-2col mt-4">
+        <!-- Alertas Urgentes -->
+        <div class="card">
+          <div class="card-header">
+            <h3>🚨 Alertas Prioritários</h3>
+            <button class="btn btn-link btn-sm" onclick="mudarParaAba('tab-relatorios')">Ver todos ➔</button>
+          </div>
+          <div class="card-body">
+            <div id="dashboard-alertas-lista" class="alertas-lista">
+              <p class="text-muted text-center py-4">Nenhum alerta crítico ativo no momento.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Últimas Movimentações -->
+        <div class="card">
+          <div class="card-header">
+            <h3>⏱️ Últimas Movimentações</h3>
+            <button class="btn btn-link btn-sm" onclick="mudarParaAba('tab-movimentacoes')">Ver histórico ➔</button>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                    <th>Recurso</th>
+                    <th>Qtd</th>
+                    <th>Responsável</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboard-ultimas-movimentacoes">
+                  <tr><td colspan="5" class="text-center text-muted">Carregando movimentações...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- ABA 2: RECURSOS & ESTOQUE                                         -->
+    <!-- ================================================================= -->
+    <section id="tab-recursos" class="tab-pane" aria-labelledby="btn-tab-recursos">
+      <div class="section-header">
+        <div>
+          <h2>Cadastro e Controle de Recursos</h2>
+          <p class="text-muted">Gerencie produtos, insumos para doação, medicamentos e seus respectivos lotes.</p>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="abrirModalRecurso()">+ Cadastrar Recurso</button>
+          <button class="btn btn-outline" onclick="exportarRecursosCSV()">📥 Exportar CSV</button>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros e Busca -->
+      <div class="card filter-card mb-3">
+        <div class="filter-grid">
+          <div class="form-group">
+            <label for="filtro-busca">Pesquisar Recurso</label>
+            <input type="text" id="filtro-busca" placeholder="Nome, lote ou descrição..." oninput="filtrarRecursosDebounce()">
+          </div>
+          <div class="form-group">
+            <label for="filtro-categoria">Categoria</label>
+            <select id="filtro-categoria" onchange="carregarRecursos()">
+              <option value="">Todas as Categorias</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filtro-alerta-estoque">Status de Estoque</label>
+            <select id="filtro-alerta-estoque" onchange="carregarRecursos()">
+              <option value="">Todos os Níveis</option>
+              <option value="NORMAL">Estoque Normal</option>
+              <option value="BAIXO">Estoque Baixo</option>
+              <option value="ZERADO">Estoque Zerado</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filtro-alerta-validade">Status de Validade</label>
+            <select id="filtro-alerta-validade" onchange="carregarRecursos()">
+              <option value="">Todas as Validades</option>
+              <option value="NORMAL">No Prazo (> 30 dias)</option>
+              <option value="PROXIMO_VENCIMENTO">Vencendo em breve (≤ 30 dias)</option>
+              <option value="VENCIDO">Vencidos</option>
+            </select>
+          </div>
+          <div class="form-group filter-actions">
+            <button class="btn btn-secondary btn-block" onclick="limparFiltrosRecursos()">Limpar Filtros</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela de Recursos -->
+      <div class="card">
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Nome / Insumo</th>
+                <th>Categoria</th>
+                <th>Saldo Atual</th>
+                <th>Estoque Mínimo</th>
+                <th>Status Estoque</th>
+                <th>Lote</th>
+                <th>Validade</th>
+                <th>Status Validade</th>
+                <th class="text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-recursos-corpo">
+              <tr><td colspan="9" class="text-center text-muted py-4">Carregando catálogo de recursos...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- ABA 3: MOVIMENTAÇÕES & FLUXO                                      -->
+    <!-- ================================================================= -->
+    <section id="tab-movimentacoes" class="tab-pane" aria-labelledby="btn-tab-movimentacoes">
+      <div class="section-header">
+        <div>
+          <h2>Registro de Fluxo e Auditoria</h2>
+          <p class="text-muted">Histórico completo de entradas (compras/doações) e saídas com rastreabilidade.</p>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="abrirModalMovimentacao()">+ Registrar Movimentação</button>
+          <button class="btn btn-outline" onclick="exportarMovimentacoesCSV()">📥 Exportar CSV</button>
+        </div>
+      </div>
+
+      <!-- Filtros de Movimentação -->
+      <div class="card filter-card mb-3">
+        <div class="filter-grid">
+          <div class="form-group">
+            <label for="filtro-mov-tipo">Tipo de Operação</label>
+            <select id="filtro-mov-tipo" onchange="carregarMovimentacoes()">
+              <option value="">Todas (Entradas e Saídas)</option>
+              <option value="ENTRADA">Entrada (Compras / Doações)</option>
+              <option value="SAIDA">Saída (Vendas / Entregas / Perdas)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filtro-mov-data-inicio">Data Inicial</label>
+            <input type="date" id="filtro-mov-data-inicio" onchange="carregarMovimentacoes()">
+          </div>
+          <div class="form-group">
+            <label for="filtro-mov-data-fim">Data Final</label>
+            <input type="date" id="filtro-mov-data-fim" onchange="carregarMovimentacoes()">
+          </div>
+          <div class="form-group filter-actions">
+            <button class="btn btn-secondary btn-block" onclick="limparFiltrosMovimentacoes()">Limpar Filtros</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela de Movimentações -->
+      <div class="card">
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Data / Hora</th>
+                <th>Tipo</th>
+                <th>Recurso</th>
+                <th>Quantidade</th>
+                <th>Saldo Anterior ➔ Posterior</th>
+                <th>Origem / Destino</th>
+                <th>Motivo</th>
+                <th>Responsável</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-movimentacoes-corpo">
+              <tr><td colspan="8" class="text-center text-muted py-4">Carregando histórico de movimentações...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- ABA 4: RELATÓRIOS & PRESTAÇÃO DE CONTAS                           -->
+    <!-- ================================================================= -->
+    <section id="tab-relatorios" class="tab-pane" aria-labelledby="btn-tab-relatorios">
+      <div class="section-header">
+        <div>
+          <h2>Relatórios Digitais & Prestação de Contas</h2>
+          <p class="text-muted">Balanço periódico de fluxo e inventário de itens críticos do seu perfil.</p>
+        </div>
+        <div class="actions">
+          <button class="btn btn-outline" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+          <button class="btn btn-outline" onclick="exportarRecursosCSV()">📥 Exportar Recursos CSV</button>
+        </div>
+      </div>
+
+      <!-- Seletor de Período para Balanço -->
+      <div class="card mb-4 no-print">
+        <div class="card-header">
+          <h3>📅 Filtro de Período para Balanço Operacional</h3>
+        </div>
+        <div class="card-body">
+          <div class="filter-grid">
+            <div class="form-group">
+              <label for="relatorio-data-inicio">Data Inicial</label>
+              <input type="date" id="relatorio-data-inicio">
+            </div>
+            <div class="form-group">
+              <label for="relatorio-data-fim">Data Final</label>
+              <input type="date" id="relatorio-data-fim">
+            </div>
+            <div class="form-group filter-actions">
+              <button class="btn btn-primary btn-block" onclick="gerarRelatorioBalanco()">Gerar Balanço</button>
+            </div>
+          </div>
+          <div class="quick-dates mt-2">
+            <span class="text-muted">Atalhos rápidos:</span>
+            <button class="btn btn-sm btn-link" onclick="definirPeriodoRapido(7)">Últimos 7 dias</button>
+            <button class="btn btn-sm btn-link" onclick="definirPeriodoRapido(30)">Últimos 30 dias</button>
+            <button class="btn btn-sm btn-link" onclick="definirPeriodoRapido(90)">Últimos 90 dias</button>
+            <button class="btn btn-sm btn-link" onclick="limparPeriodoRelatorio()">Todo o Histórico</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumo Balanço Consolidado -->
+      <div class="kpi-grid mb-4">
+        <div class="card kpi-card">
+          <div class="kpi-icon icon-green">📥</div>
+          <div class="kpi-content">
+            <span class="kpi-label">Entradas no Período</span>
+            <span class="kpi-value text-success" id="rel-total-entradas">0</span>
+            <span class="kpi-sub" id="rel-ops-entradas">0 registros</span>
+          </div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-icon icon-orange">📤</div>
+          <div class="kpi-content">
+            <span class="kpi-label">Saídas no Período</span>
+            <span class="kpi-value text-danger" id="rel-total-saidas">0</span>
+            <span class="kpi-sub" id="rel-ops-saidas">0 registros</span>
+          </div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-icon icon-blue">⚖️</div>
+          <div class="kpi-content">
+            <span class="kpi-label">Saldo Líquido</span>
+            <span class="kpi-value" id="rel-saldo-liquido">0</span>
+            <span class="kpi-sub" id="rel-total-ops">0 operações totais</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabela de Itens Críticos -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <div>
+            <h3>⚠️ Inventário de Itens Críticos (Estoque Baixo & Vencimento Iminente)</h3>
+            <p class="text-muted text-sm">Priorize compras ou distribuição imediata de insumos perecíveis (ODS 12).</p>
+          </div>
+          <button class="btn btn-secondary btn-sm no-print" onclick="carregarItensCriticos()">Atualizar</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Recurso</th>
+                <th>Categoria</th>
+                <th>Saldo Atual</th>
+                <th>Estoque Mínimo</th>
+                <th>Status Estoque</th>
+                <th>Data de Validade</th>
+                <th>Dias Restantes</th>
+                <th>Status Validade</th>
+              </tr>
+            </thead>
+            <tbody id="tabela-itens-criticos-corpo">
+              <tr><td colspan="8" class="text-center text-muted py-4">Nenhum item em estado crítico no momento!</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================================================================= -->
+  <!-- MODAL: CADASTRAR / EDITAR RECURSO                                 -->
+  <!-- ================================================================= -->
+  <dialog id="modal-recurso" class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-recurso-titulo">Cadastrar Novo Recurso</h3>
+        <button type="button" class="btn-close" aria-label="Fechar" onclick="fecharModalRecurso()">✕</button>
+      </div>
+      <form id="form-recurso" onsubmit="salvarRecurso(event)">
+        <input type="hidden" id="recurso-id">
+
+        <div class="form-group mb-3">
+          <label for="recurso-nome">Nome do Insumo / Produto *</label>
+          <input type="text" id="recurso-nome" required minlength="2" maxlength="150" placeholder="Ex: Arroz Parboilizado 1kg">
+        </div>
+
+        <div class="form-row mb-3">
+          <div class="form-group col">
+            <label for="recurso-categoria">Categoria *</label>
+            <input type="text" id="recurso-categoria" list="categorias-datalist" required placeholder="Ex: Alimentos, Higiene, Medicamentos">
+            <datalist id="categorias-datalist">
+              <option value="Alimentos">
+              <option value="Higiene e Limpeza">
+              <option value="Medicamentos Básicos">
+              <option value="Insumos Médicos">
+              <option value="Vestuário">
+              <option value="Outros">
+            </datalist>
+          </div>
+
+          <div class="form-group col">
+            <label for="recurso-unidade">Unidade de Medida *</label>
+            <select id="recurso-unidade" required>
+              <option value="UN">Unidade (UN)</option>
+              <option value="KG">Quilograma (KG)</option>
+              <option value="LITRO">Litro (LITRO)</option>
+              <option value="CAIXA">Caixa (CAIXA)</option>
+              <option value="PACOTE">Pacote (PACOTE)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row mb-3">
+          <div class="form-group col">
+            <label for="recurso-quantidade">Quantidade Inicial em Estoque *</label>
+            <input type="number" id="recurso-quantidade" min="0" step="0.01" required value="0">
+          </div>
+
+          <div class="form-group col">
+            <label for="recurso-minimo">Estoque Mínimo (Alerta) *</label>
+            <input type="number" id="recurso-minimo" min="0" step="0.01" required value="10">
+          </div>
+        </div>
+
+        <div class="form-row mb-3">
+          <div class="form-group col">
+            <label for="recurso-lote">Número do Lote *</label>
+            <input type="text" id="recurso-lote" required placeholder="Ex: LOTE-2026-A" value="PADRAO">
+          </div>
+
+          <div class="form-group col">
+            <label for="recurso-validade">Data de Validade *</label>
+            <input type="date" id="recurso-validade" required>
+          </div>
+        </div>
+
+        <div class="form-group mb-4">
+          <label for="recurso-descricao">Descrição / Observações</label>
+          <textarea id="recurso-descricao" rows="2" placeholder="Ex: Doado para a campanha de inverno; armazenar em local arejado."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="fecharModalRecurso()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-salvar-recurso">Salvar Recurso</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ================================================================= -->
+  <!-- MODAL: REGISTRAR MOVIMENTAÇÃO                                     -->
+  <!-- ================================================================= -->
+  <dialog id="modal-movimentacao" class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Registrar Movimentação de Estoque</h3>
+        <button type="button" class="btn-close" aria-label="Fechar" onclick="fecharModalMovimentacao()">✕</button>
+      </div>
+      <form id="form-movimentacao" onsubmit="salvarMovimentacao(event)">
+        <div class="form-group mb-3">
+          <label for="mov-recurso-id">Recurso / Insumo *</label>
+          <select id="mov-recurso-id" required onchange="aoSelecionarRecursoMovimentacao()">
+            <option value="">Selecione um recurso...</option>
+          </select>
+          <small id="mov-saldo-info" class="text-muted mt-1 display-block">Selecione o recurso para consultar o saldo disponível.</small>
+        </div>
+
+        <div class="form-row mb-3">
+          <div class="form-group col">
+            <label for="mov-tipo">Tipo de Movimentação *</label>
+            <select id="mov-tipo" required onchange="ajustarCamposTipoMovimentacao()">
+              <option value="ENTRADA">📥 ENTRADA (Soma ao estoque)</option>
+              <option value="SAIDA">📤 SAÍDA (Subtrai do estoque)</option>
+            </select>
+          </div>
+
+          <div class="form-group col">
+            <label for="mov-quantidade">Quantidade *</label>
+            <input type="number" id="mov-quantidade" min="0.01" step="0.01" required placeholder="0.00">
+          </div>
+        </div>
+
+        <div class="form-row mb-3">
+          <div class="form-group col">
+            <label for="mov-origem-destino" id="label-origem-destino">Origem (Fornecedor / Doador) *</label>
+            <input type="text" id="mov-origem-destino" required placeholder="Ex: Doação Campanha Local / Fornecedor XYZ">
+          </div>
+
+          <div class="form-group col">
+            <label for="mov-motivo">Motivo da Operação *</label>
+            <input type="text" id="mov-motivo" required placeholder="Ex: Recebimento de Cestas / Venda / Doação Familiar">
+          </div>
+        </div>
+
+        <div class="form-row mb-4">
+          <div class="form-group col">
+            <label for="mov-responsavel">Nome do Responsável *</label>
+            <input type="text" id="mov-responsavel" required placeholder="Ex: Operador Maria Silva">
+          </div>
+
+          <div class="form-group col">
+            <label for="mov-data">Data / Hora da Ocorrência</label>
+            <input type="datetime-local" id="mov-data">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="fecharModalMovimentacao()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-salvar-movimentacao">Confirmar Movimentação</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Container de Notificações Toast -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Rodapé Institucional -->
+  <footer class="app-footer no-print">
+    <div class="footer-container">
+      <p>Sistema Web para Gerenciamento de Estoques • Parnamirim/RN</p>
+      <p class="text-muted">Apoio a ODS 9 (Indústria, Inovação e Infraestrutura) e ODS 12 (Consumo e Produção Responsáveis)</p>
+    </div>
+  </footer>
+
+  <script src="/static/js/main.js"></script>
+</body>
+</html>
